@@ -25,15 +25,6 @@ namespace EchoRelay.Cli
         /// </summary>
         private static System.Timers.Timer? peerStatsUpdateTimer;
         /// <summary>
-        /// The time that the server was started.
-        /// </summary>
-        private static DateTime startedTime;
-        /// <summary>
-        /// A mutex lock object to be used when printing to console, to avoid color collisions.
-        /// </summary>
-        private static object _printLock = new object();
-
-        /// <summary>
         /// The CLI argument options for the application.
         /// </summary>
         public class CliOptions
@@ -86,10 +77,10 @@ namespace EchoRelay.Cli
         /// The main entry point for the application.
         /// </summary>
         /// <param name="args">The command-line arguments the application was invoked with.</param>
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // Parse our command line arguments.
-            Parser.Default.ParseArguments<CliOptions>(args).WithParsed(options =>
+            await Parser.Default.ParseArguments<CliOptions>(args).WithParsedAsync(async options =>
             {
                 // Set our options globally
                 Options = options;
@@ -167,20 +158,20 @@ namespace EchoRelay.Cli
                 }
 
                 // Start the server.
-                Server.Start().Wait();
+                await Server.Start();
             });
         }
 
         private static void ConfigureLogger(CliOptions options)
         {
             var logConfig = new LoggerConfiguration()
-                .WriteTo.Console(theme: AnsiConsoleTheme.Code);
+                .WriteTo.Async(a => a.Console(theme: AnsiConsoleTheme.Code));
 
             if (options.LogFilePath != null)
             {
-                logConfig.WriteTo.File(
+                logConfig.WriteTo.Async(a => a.File(
                     path: Options.LogFilePath,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"));
             }
 
             logConfig = options.Verbose
