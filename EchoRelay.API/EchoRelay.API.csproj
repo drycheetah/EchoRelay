@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>Library</OutputType>
+	<RepositoryUrl>https://github.com/EchoTools/EchoRelay</RepositoryUrl>
+	<Authors>Unusual-Norm</Authors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EchoRelay.Core\EchoRelay.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>
