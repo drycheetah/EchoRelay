@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using EchoRelay.API;
 using EchoRelay.Core.Server;
 using EchoRelay.Core.Server.Services;
 using EchoRelay.Core.Server.Storage;
@@ -70,6 +71,9 @@ namespace EchoRelay.Cli
 
             [Option("disable-cache", Required = false, Default = false, HelpText = "Disables the file cache. Edits to JSON files will be immediately effective.")]
             public bool DisableCache { get; set; } = true;
+
+            [Option("enable-api", Required = false, Default = false, HelpText = "Enables the API server.")]
+            public bool EnableApi { get; set; } = true;
 
         }
 
@@ -155,6 +159,12 @@ namespace EchoRelay.Cli
                 {
                     Server.OnServicePacketSent += Server_OnServicePacketSent;
                     Server.OnServicePacketReceived += Server_OnServicePacketReceived;
+                }
+
+                if (Options.EnableApi)
+                {
+                    // Start the API server.
+                    _ = new ApiServer(Server, new ApiSettings(apiKey: options.ServerDBApiKey));
                 }
 
                 // Start the server.
