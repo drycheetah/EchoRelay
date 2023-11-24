@@ -70,6 +70,10 @@ namespace EchoRelay.Core.Server.Services.ServerDB
             // Try to remove any registered game server with this server identifier.
             RegisteredGameServers.Remove(serverId, out var unregisteredGameServer);
 
+            // Remove stale session
+            if (unregisteredGameServer != null && unregisteredGameServer.SessionStarted)
+                RegisteredGameServersBySessionId.Remove((Guid)unregisteredGameServer.SessionId, out var _);
+
             // Fire the relevant event for the game server being registered.
             if (unregisteredGameServer != null)
                 OnGameServerUnregistered?.Invoke(unregisteredGameServer);
