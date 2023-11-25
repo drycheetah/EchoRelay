@@ -5,8 +5,10 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RepositoryUrl>https://github.com/Xenomega/EchoRelay</RepositoryUrl>
-    <Authors>Xenomega (David Pokora)</Authors>
+    <RepositoryUrl>https://github.com/EchoTools/EchoRelay</RepositoryUrl>
+    <Authors>github:EchoTools, Xenomega (David Pokora)</Authors>
+    <PackageProjectUrl>https://github.com/EchoTools/EchoRelay</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
