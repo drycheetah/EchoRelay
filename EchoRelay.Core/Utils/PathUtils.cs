@@ -9,9 +9,7 @@
         /// <returns>Returns a normalized path.</returns>
         public static string NormalizedPath(string path)
         {
-            return Path.GetFullPath(new Uri(path).LocalPath)
-                       .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                       .ToLowerInvariant();
+            return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
     }
 }
