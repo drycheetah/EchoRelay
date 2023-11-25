@@ -176,10 +176,7 @@ namespace EchoRelay.Core.Server.Services.Matching
             // This is a create lobby, or find lobby request. We will try to find an existing server that matches the request.
             // Filter game servers, produce ping request endpoint data.
             // We limit the amount to 100, to avoid the response hitting the max packet size.
-            if(matchingSession.RegionSymbol != null)
-            {
-                Console.Write(matchingSession.RegionSymbol);
-            }
+
             var gameServers = Server.ServerDBService.Registry.FilterGameServers(
                 findMax: 100,
                 sessionId: matchingSession.LobbyId,
@@ -192,6 +189,21 @@ namespace EchoRelay.Core.Server.Services.Matching
                 unfilledServerOnly: true,
                 regionSymbol: matchingSession.RegionSymbol
             );
+
+            if(gameServers.Count() == 0  && matchingSession.RegionSymbol != null)
+            {
+                gameServers = Server.ServerDBService.Registry.FilterGameServers(
+                findMax: 100,
+                sessionId: matchingSession.LobbyId,
+                gameTypeSymbol: matchingSession.GameTypeSymbol,
+                levelSymbol: matchingSession.LevelSymbol,
+                channel: matchingSession.Channel,
+                locked: false,
+                lobbyTypes: matchingSession.SearchLobbyTypes,
+                requestedTeam: matchingSession.TeamIndex,
+                unfilledServerOnly: true
+            );
+            }
 
             // If we only have one game server, immediately connect the peer. Otherwise, perform a ping request to determine the lowest ping server.
             if (gameServers.Count() == 1)
