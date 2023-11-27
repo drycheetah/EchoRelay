@@ -93,12 +93,12 @@ namespace EchoRelay.Cli
 
                 ConfigureLogger(options);
 
-		// Use the filesystem for storage
-	        if (!Directory.Exists(options.DatabaseFolder))
-	        {
-	            Log.Warning($"Creating database directory: {options.DatabaseFolder}");
-	            Directory.CreateDirectory(options.DatabaseFolder);
-	        }
+                // Use the filesystem for storage
+                if (!Directory.Exists(options.DatabaseFolder))
+                {
+                    Log.Warning($"Creating database directory: {options.DatabaseFolder}");
+                    Directory.CreateDirectory(options.DatabaseFolder);
+                }
 
                 // Verify other arguments
                 if (options.Port < 0 || options.Port > ushort.MaxValue)
@@ -169,8 +169,22 @@ namespace EchoRelay.Cli
                     _ = new ApiServer(Server, new ApiSettings(apiKey: options.ServerDBApiKey));
                 }
 
-                // Start the server.
-                await Server.Start();
+
+                try
+                {
+                    // Start the server.
+                    await Server.Start();
+                }
+                catch (System.Net.HttpListenerException ex)
+                {
+                    Log.Fatal($"Unable to start listener for connections: {ex.Message}");
+
+                    if (ex.ErrorCode == 5)
+                        Log.Information("The requested operation requires elevation (Run as administrator).\n\n"
+                       + $"To run as a user, execute 'netsh http add urlacl url=http://*:{options.Port}/ user=Everyone' as Administrator");
+
+                    throw new ApplicationException($"Server startup failed: {ex.Message}");
+                }
             });
         }
         /// <summary>
