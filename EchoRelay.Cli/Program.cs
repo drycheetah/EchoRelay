@@ -93,12 +93,12 @@ namespace EchoRelay.Cli
 
                 ConfigureLogger(options);
 
-                // Verify the database folder exists.
-                if (!Directory.Exists(options.DatabaseFolder))
-                {
-                    Log.Fatal("Provided database folder does not exist. You must specify a valid directory.");
-                    return;
-                }
+		// Use the filesystem for storage
+	        if (!Directory.Exists(options.DatabaseFolder))
+	        {
+	            Log.Warning($"Creating database directory: {options.DatabaseFolder}");
+	            Directory.CreateDirectory(options.DatabaseFolder);
+	        }
 
                 // Verify other arguments
                 if (options.Port < 0 || options.Port > ushort.MaxValue)
