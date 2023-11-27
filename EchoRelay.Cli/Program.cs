@@ -26,54 +26,55 @@ namespace EchoRelay.Cli
         /// The update timer used to trigger a peer stats update on a given interval.
         /// </summary>
         private static System.Timers.Timer? peerStatsUpdateTimer;
+
         /// <summary>
         /// The CLI argument options for the application.
         /// </summary>
         public class CliOptions
         {
-            [Option('d', "database", Required = true, HelpText = "The database folder to use for server resources. If running for the first time, should be an existing, but empty folder.")]
-            public string DatabaseFolder { get; set; } = "";
+            [Option('d', "database", SetName = "filesystem", Required = false, HelpText = "specify database folder")]
+            public string? DatabaseFolder { get; set; }
 
-            [Option('g', "game", Required = false, HelpText = "The optional path to the game (echovr.exe). Extracts symbols to the server's symbol cache during initial deployment.")]
-            public string? GameExecutablePath { get; set; }
+            [Option('g', "game", Required = false, HelpText = "specify path to the 'ready-at-dawn-echo-arena' for building the symbol cache")]
+            public string? GameBasePath { get; set; }
 
-            [Option('p', "port", Required = false, Default = 777, HelpText = "The TCP port to broadcast central services over.")]
+            [Option('p', "port", Required = false, Default = 777, HelpText = "specify the TCP port to listen on")]
             public int Port { get; set; }
 
-            [Option("apikey", Required = false, Default = null, HelpText = "Requires a specific API key as part of the ServerDB connection URI query parameters.")]
+            [Option("apikey", Required = false, Default = null, HelpText = "require game servers authenticate with API Key (via '?apikey=' query parameters).")]
             public string? ServerDBApiKey { get; set; }
 
-            [Option("forcematching", Required = false, Default = true, HelpText = "Forces users to match to any available game, in the event of their requested game servers being unavailable.")]
+            [Option("forcematching", Required = false, Default = true, HelpText = "attempt to match player again if first match fails.")]
             public bool ForceMatching { get; set; }
 
-            [Option("lowpingmatching", Required = false, Default = false, HelpText = "Sets a preference for matching to game servers with low ping instead of high population.")]
+            [Option("lowpingmatching", Required = false, Default = false, HelpText = "prefer matches on lower ping game servers vs higher population.")]
             public bool LowPingMatching { get; set; }
 
-            [Option("outputconfig", Required = false, HelpText = "Outputs the generated service config file to a given file path on disk.")]
+            [Option("outputconfig", Required = false, HelpText = "specify the path to write an example 'config.json'.")]
             public string? OutputConfigPath { get; set; } = null;
 
-            [Option("statsinterval", Required = false, Default = 3000, HelpText = "Sets the interval at which the CLI will output its peer stats (in milliseconds).")]
+            [Option("statsinterval", Required = false, Default = 3000, HelpText = "specify update interval for peer stats output (in milliseconds).")]
             public double StatsUpdateInterval { get; set; }
 
-            [Option("noservervalidation", Required = false, Default = false, HelpText = "Disables validation of game servers using raw ping requests, ensuring their ports are exposed.")]
+            [Option("noservervalidation", Required = false, Default = false, HelpText = "disable validation of game server connectivity.")]
             public bool ServerDBValidateGameServers { get; set; }
 
-            [Option("servervalidationtimeout", Required = false, Default = 3000, HelpText = "Sets the timeout for game server validation using raw ping requests. In milliseconds.")]
+            [Option("servervalidationtimeout", Required = false, Default = 3000, HelpText = "set game server validation timeout for game server validation using raw ping requests. In milliseconds.")]
             public int ServerDBValidateGameServersTimeout { get; set; }
 
-            [Option('v', "verbose", Required = false, Default = false, HelpText = "Output all data to console/file (includes debug output). ")]
+            [Option('v', "verbose", Required = false, Default = false, HelpText = "increase verbosity")]
             public bool Verbose { get; set; } = true;
 
-            [Option('V', "debug", Required = false, Default = false, HelpText = "Output all client/server messages.")]
+            [Option('V', "debug", Required = false, Default = false, HelpText = "emit debugging output")]
             public bool Debug { get; set; } = true;
 
-            [Option('l', "logfile", Required = false, Default = null, HelpText = "Specifies the path to the log file.")]
+            [Option('l', "logfile", Required = false, Default = null, HelpText = "send output to a logfile")]
             public string? LogFilePath { get; set; }
 
-            [Option("disable-cache", Required = false, Default = false, HelpText = "Disables the file cache. Edits to JSON files will be immediately effective.")]
+            [Option("disable-cache", Required = false, Default = false, HelpText = "disable caching of database resources, file edits are immediately effective")]
             public bool DisableCache { get; set; } = true;
 
-            [Option("enable-api", Required = false, Default = false, HelpText = "Enables the API server.")]
+            [Option("enable-api", Required = false, Default = false, HelpText = "enable the API server")]
             public bool EnableApi { get; set; } = true;
 
         }
@@ -92,11 +93,11 @@ namespace EchoRelay.Cli
 
                 ConfigureLogger(options);
 
-                // Verify the database folder exists.
+                // Use the filesystem for storage
                 if (!Directory.Exists(options.DatabaseFolder))
                 {
-                    Log.Fatal("Provided database folder does not exist. You must specify a valid directory.");
-                    return;
+                    Log.Warning($"Creating database directory: {options.DatabaseFolder}");
+                    Directory.CreateDirectory(options.DatabaseFolder);
                 }
 
                 // Verify other arguments
@@ -129,7 +130,7 @@ namespace EchoRelay.Cli
                 if (performInitialSetup)
                 {
                     Log.Information("[SERVER] Performing initial setup: server resources to database folder..");
-                    InitialDeployment.PerformInitialDeployment(serverStorage, options.GameExecutablePath, false);
+                    InitialDeployment.PerformInitialDeployment(serverStorage, options.GameBasePath, false);
                 }
 
                 // Create a server instance
@@ -168,11 +169,28 @@ namespace EchoRelay.Cli
                     _ = new ApiServer(Server, new ApiSettings(apiKey: options.ServerDBApiKey));
                 }
 
-                // Start the server.
-                await Server.Start();
+
+                try
+                {
+                    // Start the server.
+                    await Server.Start();
+                }
+                catch (System.Net.HttpListenerException ex)
+                {
+                    Log.Fatal($"Unable to start listener for connections: {ex.Message}");
+
+                    if (ex.ErrorCode == 5)
+                        Log.Information("The requested operation requires elevation (Run as administrator).\n\n"
+                       + $"To run as a user, execute 'netsh http add urlacl url=http://*:{options.Port}/ user=Everyone' as Administrator");
+
+                    throw new ApplicationException($"Server startup failed: {ex.Message}");
+                }
             });
         }
-
+        /// <summary>
+        /// Configures the Serilog logger based on the provided command-line options.
+        /// </summary>
+        /// <param name="options">The command-line options specifying the logging configuration.</param>
         private static void ConfigureLogger(CliOptions options)
         {
             var logConfig = new LoggerConfiguration()

@@ -250,7 +250,7 @@ namespace EchoRelay.Core.Server.Services.Login
             // Validate the user identifier
             if (!request.UserId.Valid())
             {
-                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.BadRequest, "User identifier invalid"));
+                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.BadRequest, $"Invalid User Identifier\n'{request.UserId}' is invalid."));
                 return;
             }
 
@@ -258,7 +258,7 @@ namespace EchoRelay.Core.Server.Services.Login
             // TODO: Revisit this, these are not the same values. Should AccountId be the one we actually index accounts by? Can Platform ID change with time..?
             if (false && request.AccountInfo.AccountId != request.UserId.AccountId)
             {
-                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.BadRequest, "Authentication failed"));
+                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.Unauthorized, "Authentication failed"));
                 return;
             }
 
@@ -296,14 +296,21 @@ namespace EchoRelay.Core.Server.Services.Login
             // was provided, it will be set for future authentication.
             if (!account.Authenticate(authPassword))
             {
-                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.BadRequest, $"Invalid account password/authentication lock"));
+                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.Unauthorized, $"Invalid Login Credentials\nIncorrect credentials."));
                 return;
             }
 
             // Check if the user is banned
             if (account.Banned)
             {
-                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.BadRequest, $"Banned until: {account.BannedUntil!.Value:MM/dd/yyyy @ hh:mm:ss tt} (UTC)"));
+                string banMessage = $"Account Temporarily Suspended\nUnavailable until {account.BannedUntil!.Value:MM/dd/yyyy @ hh:mm:ss tt} (UTC)";
+
+                if (account.BannedUntil == DateTime.MaxValue)
+                {
+                    banMessage = "Account Permanently Banned";
+                }
+
+                await sender.Send(new LoginFailure(request.UserId, HttpStatusCode.Forbidden, banMessage));
                 return;
             }
             else
@@ -371,7 +378,8 @@ namespace EchoRelay.Core.Server.Services.Login
             // Verify the session details provided
             if (!CheckUserSessionValid(request.Session, request.UserId))
             {
-                await sender.Send(new LoggedInUserProfileFailure(request.UserId, HttpStatusCode.BadRequest, "Authentication failed"));
+                await sender.Send(new LoggedInUserProfileFailure(request.UserId, HttpStatusCode.Unauthorized, 
+                    "Invalid Session\nYour session has expired or is no longer valid."));
                 return;
             }
 
@@ -379,7 +387,8 @@ namespace EchoRelay.Core.Server.Services.Login
             AccountResource? account = Storage.Accounts.Get(request.UserId);
             if (account == null)
             {
-                await sender.Send(new LoggedInUserProfileFailure(request.UserId, HttpStatusCode.BadRequest, "Failed to obtain profile"));
+                await sender.Send(new LoggedInUserProfileFailure(request.UserId, HttpStatusCode.InternalServerError,
+                    "Profile Error\nUnable to load your account due to a server issue."));
                 return;
             }
 
@@ -398,7 +407,8 @@ namespace EchoRelay.Core.Server.Services.Login
             AccountResource? account = Storage.Accounts.Get(request.UserId);
             if (account == null)
             {
-                await sender.Send(new OtherUserProfileFailure(request.UserId, HttpStatusCode.BadRequest, "Failed to obtain profile"));
+                await sender.Send(new OtherUserProfileFailure(request.UserId, HttpStatusCode.InternalServerError,
+                    "Profile Error\nUnable to load your account due to a server issue."));
                 return;
             }
 

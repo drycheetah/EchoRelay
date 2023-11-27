@@ -6,8 +6,8 @@
         Thank you,
         ~Xenomega (David Pokora)
         -->
-        <Authors>Xenomega (David Pokora)</Authors>
-        <Company>Xenomega (David Pokora)</Company>
-        <Version>0.7.0</Version>
+        <Authors>github.com:EchoTools, Xenomega (David Pokora)</Authors>
+        <Company>github.com:EchoTools</Company>
+        <Version>1.0.0</Version>
     </PropertyGroup>
   </Project>
