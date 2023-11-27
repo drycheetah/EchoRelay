@@ -240,3 +240,7 @@ packages/
 # ignore launch settings
 launchSettings.json
 
+# local files
+*._local.*
+_build/
+_local/
