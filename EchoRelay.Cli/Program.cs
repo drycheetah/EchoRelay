@@ -1,4 +1,5 @@
-﻿using CommandLine;
+﻿using System.Runtime.InteropServices;
+using CommandLine;
 using EchoRelay.API;
 using EchoRelay.Core.Server;
 using EchoRelay.Core.Server.Services;
@@ -26,10 +27,11 @@ namespace EchoRelay.Cli
         /// The update timer used to trigger a peer stats update on a given interval.
         /// </summary>
         private static System.Timers.Timer? peerStatsUpdateTimer;
-
         /// <summary>
         /// The CLI argument options for the application.
         /// </summary>
+        private static ApiServer? ApiServer;
+
         public class CliOptions
         {
             [Option('d', "database", SetName = "filesystem", Required = false, HelpText = "specify database folder")]
@@ -76,6 +78,13 @@ namespace EchoRelay.Cli
 
             [Option("enable-api", Required = false, Default = false, HelpText = "enable the API server")]
             public bool EnableApi { get; set; } = true;
+
+            [Option("central-api-key", Required = false, Default = null, HelpText = "require central api authenticate with API Key (via '?centralapikey=' query parameters).")]
+            public string? CentralApiKey { get; set; }
+            
+            [Option("notify-central-api", Required = false, Default = null,
+                HelpText = "notify central api when your relay is online")]
+            public string? NotifyCentralApi { get; set; } = null;
 
         }
 
@@ -162,14 +171,7 @@ namespace EchoRelay.Cli
                     Server.OnServicePacketSent += Server_OnServicePacketSent;
                     Server.OnServicePacketReceived += Server_OnServicePacketReceived;
                 }
-
-                if (Options.EnableApi)
-                {
-                    // Start the API server.
-                    _ = new ApiServer(Server, new ApiSettings(apiKey: options.ServerDBApiKey));
-                }
-
-
+                
                 try
                 {
                     // Start the server.
@@ -218,6 +220,11 @@ namespace EchoRelay.Cli
 
         private static void Server_OnServerStarted(Server server)
         {
+            if (Options.EnableApi)
+            {
+                ApiServer = new ApiServer(server, new ApiSettings(apiKey: Options.ServerDBApiKey, notifyCentralApi: Options.NotifyCentralApi, centralApiKey:Options.CentralApiKey));
+            }
+            
             // Print our server started message
             Log.Information("[SERVER] Server started");
 
