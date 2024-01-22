@@ -187,13 +187,8 @@ namespace EchoRelay.Cli
                 }
                 catch (System.Net.HttpListenerException ex)
                 {
-                    Log.Fatal($"Unable to start listener for connections: {ex.Message}");
-
-                    if (ex.ErrorCode == 5)
-                        Log.Information("The requested operation requires elevation (Run as administrator).\n\n"
-                       + $"To run as a user, execute 'netsh http add urlacl url=http://*:{options.Port}/ user=Everyone' as Administrator");
-
-                    throw new ApplicationException($"Server startup failed: {ex.Message}");
+                    Log.Warning("Exception encountered: {}", ex.Message);
+                  
                 }
             });
         }
