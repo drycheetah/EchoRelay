@@ -10,6 +10,7 @@ using EchoRelay.Core.Server.Storage;
 using EchoRelay.Core.Server.Storage.Resources;
 using EchoRelay.Core.Server.Storage.Types;
 using EchoRelay.Core.Utils;
+using Serilog;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.WebSockets;

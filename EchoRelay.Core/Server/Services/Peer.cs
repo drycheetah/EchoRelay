@@ -127,7 +127,8 @@ namespace EchoRelay.Core.Server.Services
             // Support the X-Forwarded-For header for (multi-)proxied connections.
             var xffHeader = context.Request.Headers.Get("X-Forwarded-For");
             var XRealIPHeader = context.Request.Headers.Get("X-Real-IP");
-           try {
+            try
+            {
                 // Prefer the X-Forwarded-For header
                 if (!String.IsNullOrEmpty(xffHeader))
                 {
@@ -135,13 +136,15 @@ namespace EchoRelay.Core.Server.Services
                     // First IP is the closest client
                     Address = proxyChain.First();
 
-                } else if (!String.IsNullOrEmpty(XRealIPHeader))
+                }
+                else if (!String.IsNullOrEmpty(XRealIPHeader))
                 {
                     Address = IPAddress.Parse(XRealIPHeader);
                 }
             }
-            catch (Exception ex) {
-                Log.Debug($"Error parsing proxy headers", ex);
+            catch (Exception ex)
+            {
+                Log.Error("Error parsing proxy headers: {Error}", ex.Message);
             }
 
             Port = (ushort)context.Request.RemoteEndPoint.Port;

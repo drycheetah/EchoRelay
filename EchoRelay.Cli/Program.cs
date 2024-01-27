@@ -84,7 +84,7 @@ namespace EchoRelay.Cli
 
             [Option("central-api-key", Required = false, Default = null, HelpText = "authenticate to central api using key")]
             public string? CentralApiKey { get; set; }
-            
+
             [Option("notify-central-api", Required = false, HelpText = "notify central api when this relay is online at URL")]
             public string? CentralApiUrl { get; set; } = null;
         }
@@ -106,18 +106,18 @@ namespace EchoRelay.Cli
                 // Use the filesystem for storage
                 if (!Directory.Exists(options.DatabaseFolder))
                 {
-                    Log.Warning($"Creating database directory: {options.DatabaseFolder}");
+                    Log.Warning("Creating database directory: {DatabaseFolder}", options.DatabaseFolder);
                     Directory.CreateDirectory(options.DatabaseFolder);
                 }
 
                 // Verify other arguments
                 if (options.Port < 0 || options.Port > ushort.MaxValue)
                 {
-                    Log.Fatal($"Provided port is invalid. You must a value between 1 and {ushort.MaxValue}.");
+                    Log.Fatal("Provided port is invalid. You must provide a value between 1 and {UshortMaxValue}.", ushort.MaxValue);
                     return;
                 }
 
-                Log.Debug($"Runtime arguments: '{string.Join(" ", args)}'");
+                Log.Information("Runtime arguments: '{Args}'", string.Join(" ", args));
                 // Create our file system storage and open it.
                 ServerStorage serverStorage = new FilesystemServerStorage(options.DatabaseFolder, Options.DisableCache);
 
@@ -179,7 +179,7 @@ namespace EchoRelay.Cli
                     Server.OnServicePacketSent += Server_OnServicePacketSent;
                     Server.OnServicePacketReceived += Server_OnServicePacketReceived;
                 }
-                
+
                 try
                 {
                     // Start the server.
@@ -223,11 +223,11 @@ namespace EchoRelay.Cli
 
         private static void Server_OnServerStarted(Server server)
         {
-            if (Options.EnableApi)
+            if (Options!.EnableApi)
             {
-                ApiServer = new ApiServer(server, new ApiSettings(apiKey: Options.ServerDBApiKey, centralApiUrl: Options.CentralApiUrl, centralApiKey:Options.CentralApiKey));
+                ApiServer = new ApiServer(server, new ApiSettings(apiKey: Options.ServerDBApiKey, centralApiUrl: Options.CentralApiUrl, centralApiKey: Options.CentralApiKey));
             }
-            
+
             // Print our server started message
             Log.Information("[SERVER] Server started");
 
@@ -259,14 +259,13 @@ namespace EchoRelay.Cli
 
         private static void PeerStatsUpdateTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            Log.Information($"[PEERSTATS] " +
-                $"gameservers: {Server.ServerDBService.Registry.RegisteredGameServers.Count}, " +
-                $"login: {Server.LoginService.Peers.Count}, " +
-                $"config: {Server.ConfigService.Peers.Count}, " +
-                $"matching: {Server.MatchingService.Peers.Count}, " +
-                $"serverdb: {Server.ServerDBService.Peers.Count}, " +
-                $"transaction: {Server.TransactionService.Peers.Count}"
-                );
+            Log.Information("[PEERSTATS] gameservers: {RegisteredGameServersCount}, login: {LoginPeersCount}, config: {ConfigPeersCount}, matching: {MatchingPeersCount}, serverdb: {ServerDBPeersCount}, transaction: {TransactionPeersCount}",
+                Server.ServerDBService.Registry.RegisteredGameServers.Count,
+                Server.LoginService.Peers.Count,
+                Server.ConfigService.Peers.Count,
+                Server.MatchingService.Peers.Count,
+                Server.ServerDBService.Peers.Count,
+                Server.TransactionService.Peers.Count);
         }
 
         private static void Server_OnServerStopped(Server server)
@@ -282,47 +281,53 @@ namespace EchoRelay.Cli
         private static void Server_OnAuthorizationResult(Server server, System.Net.IPEndPoint client, bool authorized)
         {
             if (!authorized)
-                Log.Information($"[SERVER] client({client.Address}:{client.Port}) failed authorization");
+                Log.Information("[SERVER] client({Address}:{Port}) failed authorization", client.Address, client.Port);
         }
 
         private static void Server_OnServicePeerConnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
-            Log.Debug($"[{service.Name}] client({peer.Address}:{peer.Port}) connected");
+            Log.Debug("[{ServiceName}] client({Address}:{Port}) connected", service.Name, peer.Address, peer.Port);
         }
 
         private static void Server_OnServicePeerDisconnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
-            Log.Debug($"[{service.Name}] client({peer.Address}:{peer.Port}) disconnected");
+            Log.Debug("[{ServiceName}] client({Address}:{Port}) disconnected", service.Name, peer.Address, peer.Port);
         }
 
         private static void Server_OnServicePeerAuthenticated(Core.Server.Services.Service service, Core.Server.Services.Peer peer, Core.Game.XPlatformId userId)
         {
-            Log.Information($"[{service.Name}] client({peer.Address}:{peer.Port}) authenticated as account='{userId}' displayName='{peer.UserDisplayName}'");
+            Log.Information("[{ServiceName}] client({Address}:{Port}) authenticated as account='{UserId}' displayName='{UserDisplayName}'", service.Name, peer.Address, peer.Port, userId, peer.UserDisplayName);
         }
 
         private static void Registry_OnGameServerRegistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
         {
-            Log.Information($"[{gameServer.Peer.Service.Name}] client({gameServer.Peer.Address}:{gameServer.Peer.Port}) registered game server (server_id={gameServer.ServerId}, region_symbol={gameServer.RegionSymbol}, version_lock={gameServer.VersionLock}, endpoint=<{gameServer.ExternalAddress}:{gameServer.Port}>)");
+            Log.Information("[{ServiceName}] client({Address}:{Port}) registered game server (server_id={ServerId}, region_symbol={RegionSymbol}, version_lock={VersionLock}, endpoint=<{ExternalAddress}:{Port}>)",
+                gameServer.Peer.Service.Name, gameServer.Peer.Address, gameServer.Peer.Port,
+                gameServer.ServerId, gameServer.RegionSymbol, gameServer.VersionLock,
+                gameServer.ExternalAddress, gameServer.Port);
         }
 
         private static void Registry_OnGameServerUnregistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
         {
-            Log.Information($"[{gameServer.Peer.Service.Name}] client({gameServer.Peer.Address}:{gameServer.Peer.Port}) unregistered game server (server_id={gameServer.ServerId}, region_symbol={gameServer.RegionSymbol}, version_lock={gameServer.VersionLock}, endpoint=<{gameServer.ExternalAddress}:{gameServer.Port}>)");
+            Log.Information("[{ServiceName}] client({Address}:{Port}) unregistered game server (server_id={ServerId}, region_symbol={RegionSymbol}, version_lock={VersionLock}, endpoint=<{ExternalAddress}:{Port}>)",
+                gameServer.Peer.Service.Name, gameServer.Peer.Address, gameServer.Peer.Port,
+                gameServer.ServerId, gameServer.RegionSymbol, gameServer.VersionLock,
+                gameServer.ExternalAddress, gameServer.Port);
         }
 
         private static void ServerDBService_OnGameServerRegistrationFailure(Peer peer, Core.Server.Messages.ServerDB.ERGameServerRegistrationRequest registrationRequest, string failureMessage)
         {
-            Log.Error($"[{peer.Service.Name}] client({peer.Address}:{peer.Port}) failed to register game server: \"{failureMessage}\"");
+            Log.Warning("[{ServiceName}] client({Address}:{Port}) failed to register game server: \"{FailureMessage}\"", peer.Service.Name, peer.Address, peer.Port, failureMessage);
         }
 
         private static void Server_OnServicePacketSent(Core.Server.Services.Service service, Core.Server.Services.Peer sender, Core.Server.Messages.Packet packet)
         {
-            packet.ForEach(p => Log.Debug($"[{service.Name}] ({sender.Address}:{sender.Port}) SENT: " + p));
+            packet.ForEach(p => Log.Debug("[{ServiceName}] ({Address}:{Port}) SENT: {Packet}", service.Name, sender.Address, sender.Port, p));
         }
 
         private static void Server_OnServicePacketReceived(Core.Server.Services.Service service, Core.Server.Services.Peer sender, Core.Server.Messages.Packet packet)
         {
-            packet.ForEach(p => Log.Debug($"[{service.Name}] ({sender.Address}:{sender.Port}) RECV: " + p));
+            packet.ForEach(p => Log.Debug("[{ServiceName}] ({SenderAddress}:{Port}) RECV: {Packet}", service.Name, sender.Address, sender.Port, p));
         }
     }
 }

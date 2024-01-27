@@ -2,6 +2,7 @@
 using EchoRelay.Core.Server.Messages;
 using EchoRelay.Core.Server.Storage;
 using EchoRelay.Core.Server.Storage.Resources;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
@@ -127,7 +128,6 @@ namespace EchoRelay.Core.Server.Services
                 Peers.Add(peer);
                 PeersByEndpoint[endpoint] = peer;
             }
-
             // Fire the peer connected event
             OnPeerConnected?.Invoke(this, peer);
 
