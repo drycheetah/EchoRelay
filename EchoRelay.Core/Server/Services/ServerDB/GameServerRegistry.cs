@@ -135,10 +135,16 @@ namespace EchoRelay.Core.Server.Services.ServerDB
                     else if (maxSessionAge.HasValue && gameServer.SessionAge >= maxSessionAge.Value)
                         continue;
                 }
-
-                // The game server matched all filters, add it to the list
-                filteredGameServers.Add(gameServer);
+                // Only add the server if it has a non-zero player count, or if the list does not already contain a server with the same external address.
+                if (gameServer.SessionPlayerCount != 0 || !filteredGameServers.Any(gs => gs.ExternalAddress == gameServer.ExternalAddress))
+                {
+                    filteredGameServers.Add(gameServer);
+                }
             }
+            // Randomize the filtered game servers so that the population sort is not always the same.
+            Random random = new Random();
+            filteredGameServers = filteredGameServers.OrderBy(x => random.Next()).ToList();
+
             return filteredGameServers;
         }
         #endregion
