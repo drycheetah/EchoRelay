@@ -188,7 +188,7 @@ namespace EchoRelay.Core.Server.Services
                 try {
                 await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
                 } catch {}
-                Log.Warning("An exception occurred while handling a websocket connection: {0}", e);
+                Log.Debug("An exception occurred while handling a websocket connection: {0}", e);
             }
             finally
             {
