@@ -228,7 +228,7 @@ namespace EchoRelay.Core.Server
                         listenerContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         listenerContext.Response.Close();
 
-                        // TODO: Log the interaction.
+                        Log.Warning("Received a non-websocket request from {RemoteEndPoint}", listenerContext.Request.RemoteEndPoint);
 
                         // Do not accept this client.
                         continue;
@@ -240,7 +240,7 @@ namespace EchoRelay.Core.Server
                     OnAuthorizationResult?.Invoke(this, listenerContext.Request.RemoteEndPoint, authorized);
                     if (!authorized)
                     {
-                        // TODO: Log the interaction.
+                        Log.Warning("Received a connection from {RemoteEndPoint} which was not authorized by the ACL.", listenerContext.Request.RemoteEndPoint);
 
                         // Do not accept this client.
                         continue;
@@ -258,7 +258,7 @@ namespace EchoRelay.Core.Server
                         listenerContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         listenerContext.Response.Close();
 
-                        // TODO: Log the exception.
+                        Log.Error(e, "Failed to accept a websocket connection from {RemoteEndPoint}", listenerContext.Request.RemoteEndPoint);
                         continue;
                     }
 
@@ -269,29 +269,61 @@ namespace EchoRelay.Core.Server
                         listenerContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
                         listenerContext.Response.Close();
 
-                        // TODO: Log the interaction.
+                        Log.Warning("Received a connection from {RemoteEndPoint} which requested an invalid path: {Path}", listenerContext.Request.RemoteEndPoint, listenerContext.Request.Url?.LocalPath);
                         continue;
                     }
 
                     // Create a task to handle the new connection asynchronously (we do not await, so we can continue accepting connections).
-                    var handleConnectionTask = Task.Run(() => service.HandleConnection(listenerContext, webSocketContext.WebSocket));
+                    var handleConnectionTask = Task.Run(() => service.HandleConnection(listenerContext, webSocketContext.WebSocket))
+                              .ContinueWith(t => 
+                              {
+                                  if (t.IsFaulted)
+                                  {
+                                    Exception ex = t.Exception ?? new Exception("Unknown exception");
+                                    if (ex is AggregateException)
+                                    {
+                                        ex = ex.InnerException ?? ex;
+                                    }
+                                    if (ex is WebSocketException)
+                                    {
+                                        Log.Warning("An error occurred while handling a connection from {RemoteEndPoint}: {Exception}", listenerContext.Request.RemoteEndPoint, ex.Message.ToString());
+                                    }
+                                    else
+                                    {
+                                        Log.Warning(ex, "An error occurred while handling a connection from {RemoteEndPoint}: {Exception}", listenerContext.Request.RemoteEndPoint, ex.Message.ToString());
+                                    }
+                                  }
+                              });
                 }
             }
             catch (TimeoutException)
             {
+                Log.Debug("Server task timed out.");
             }
             catch (TaskCanceledException)
             {
+                Log.Debug("Server task was cancelled.");
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Server task encountered an exception: {Exception}", e.Message.ToString());
             }
 
             // Ensure our listener is closed
-            listener.Close();
+            try
+            {
+                listener.Close();
 
-            // Set our state to not running.
-            Running = false;
+                // Set our state to not running.
+                Running = false;
 
-            // Fire our stopped event
-            OnServerStopped?.Invoke(this);
+                // Fire our stopped event
+                OnServerStopped?.Invoke(this);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "An error occurred while stopping the server: {Exception}", e.Message.ToString());
+            }
         }
 
         /// <summary>

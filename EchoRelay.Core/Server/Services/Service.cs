@@ -183,6 +183,13 @@ namespace EchoRelay.Core.Server.Services
                     }
                 }
             }
+            catch (Exception e) {
+                // Close the connection with an internal server error status.
+                try {
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
+                } catch {}
+                Log.Warning("An exception occurred while handling a websocket connection: {0}", e);
+            }
             finally
             {
                 // Whether we exit gracefully or encounter an exception, remove the peer from our list of peers.

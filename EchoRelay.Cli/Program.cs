@@ -185,10 +185,10 @@ namespace EchoRelay.Cli
                     // Start the server.
                     await Server.Start();
                 }
-                catch (System.Net.HttpListenerException ex)
+                catch (Exception ex)
                 {
-                    Log.Warning("Exception encountered: {}", ex.Message);
-                  
+                    Log.Fatal("HTTP Server encountered fatal exception: {Exception}", ex.ToString());
+
                 }
             });
         }
