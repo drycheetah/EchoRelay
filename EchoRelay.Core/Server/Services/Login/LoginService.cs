@@ -16,7 +16,7 @@ namespace EchoRelay.Core.Server.Services.Login
     /// <summary>
     /// The login service is used to sign in, obtain a session, obtain logged in/other user profiles, update logged in profile, etc.
     /// </summary>
-    public class LoginService : Service
+    public partial class LoginService : Service
     {
         #region Fields
         /// <summary>
@@ -151,6 +151,9 @@ namespace EchoRelay.Core.Server.Services.Login
             {
                 try
                 {
+                    // Avoid parsing the log if it doesn't contain the CUSTOMIZATION_METRICS_PAYLOAD message.
+                    if (log.Contains("CUSTOMIZATION_METRICS_PAYLOAD") == false) continue;
+
                     dynamic? logJson = JsonConvert.DeserializeObject(log);
 
                     if (logJson == null) continue;
@@ -159,10 +162,10 @@ namespace EchoRelay.Core.Server.Services.Login
                     if (logJson["[item_name]"] == null) continue;
                     string itemName = logJson["[item_name]"].ToString();
 
-                    var regex1 = new System.Text.RegularExpressions.Regex(@"^(.*?)_.*$");
-                    var regex2 = new System.Text.RegularExpressions.Regex(@"^rwd_(.*?)_.*$");
-                    var match1 = regex1.Match(itemName);
-                    var match2 = regex2.Match(itemName);
+                    var itemRegex = ItemNameRegex();
+                    var rewardRegex = RewardNameRegex();
+                    var match1 = itemRegex.Match(itemName);
+                    var match2 = rewardRegex.Match(itemName);
 
                     string itemType = match1.Groups[1].Value;
                     if (match2.Groups.Count > 1)
@@ -556,6 +559,11 @@ namespace EchoRelay.Core.Server.Services.Login
             await sender.Send(new DocumentSuccess(nameSymbol.Value, resource));
             await sender.Send(new TcpConnectionUnrequireEvent());
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex("^(.*?)_.*$")]
+        private static partial System.Text.RegularExpressions.Regex ItemNameRegex();
+        [System.Text.RegularExpressions.GeneratedRegex("^rwd_(.*?)_.*$")]
+        private static partial System.Text.RegularExpressions.Regex RewardNameRegex();
         #endregion
     }
 }

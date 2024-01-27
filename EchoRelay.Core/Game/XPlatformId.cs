@@ -172,7 +172,7 @@ namespace EchoRelay.Core.Game
         /// <returns>A string representation of the platform identifier.</returns>
         public override string ToString()
         {
-            return $"{PlatformCode.GetPrefix()}-{AccountId}";
+            return PlatformCode.GetPrefix() + "-" + AccountId.ToString();
         }
         #endregion
     }
