@@ -228,7 +228,7 @@ namespace EchoRelay.Core.Server
                         listenerContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         listenerContext.Response.Close();
 
-                        Log.Warning("Received a non-websocket request from {RemoteEndPoint}", listenerContext.Request.RemoteEndPoint);
+                        Log.Warning("Received a non-websocket request");
 
                         // Do not accept this client.
                         continue;
