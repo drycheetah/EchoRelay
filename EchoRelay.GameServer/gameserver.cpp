@@ -149,9 +149,7 @@ VOID OnTcpMsgPlayersRejected(GameServerLib* self, VOID* proxymthd, EchoVR::TcpPe
 VOID OnTcpMsgSessionSuccessv5(GameServerLib* self, VOID* proxymthd, EchoVR::TcpPeer sender, VOID* msg, VOID* unk, UINT64 msgSize)
 {
 	// Forward the received join session success event to the internal broadcast.
-	// NOTE: For some reason, currently the session success message for servers parses differently than clients by some offset when setting packet encoding settings.
-	// To account for this, we shift the message pointer, and its size. This is non-problematic for the delegate proxy method wrapper, which only validates minimum size.
-	EchoVR::BroadcasterReceiveLocalEvent(self->broadcaster, SYMBOL_BROADCASTER_LOBBY_SESSION_SUCCESS_V5, "SNSLobbySessionSuccessv5", (CHAR*)msg - 0x10, msgSize + 0x10);
+	EchoVR::BroadcasterReceiveLocalEvent(self->broadcaster, SYMBOL_BROADCASTER_LOBBY_SESSION_SUCCESS_V5, "SNSLobbySessionSuccessv5", (CHAR*)msg, msgSize);
 }
 
 /// <summary>
