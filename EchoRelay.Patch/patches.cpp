@@ -1,6 +1,7 @@
 #include "echovrunexported.h"
 #include "patches.h"
 #include "processmem.h"
+#include <string>
 #include <detours.h>
 
 /// <summary>
@@ -98,8 +99,8 @@ VOID PatchDetour(PVOID* ppPointer, PVOID pDetour)
 /// <returns>None</returns>
 VOID WriteLogHook(EchoVR::LogLevel logLevel, UINT64 unk, const CHAR* format, va_list vl)
 {
-    // Filter out very noisy messages by quitting early.
-    if (!strcmp(format, "[DEBUGPRINT] %s %s"))
+
+    if (!strcmp(format, "[DEBUGPRINT] %s %s") || !strcmp(format, "[SCRIPT] %s: %s"))
     {
         // If the overall template matched, format it
         CHAR formattedLog[0x1000];
@@ -109,6 +110,8 @@ VOID WriteLogHook(EchoVR::LogLevel logLevel, UINT64 unk, const CHAR* format, va_
         // If the final output matches the strings below, we do not log.
         if (!strcmp(formattedLog, "[DEBUGPRINT] PickRandomTip: context = 0x41D2C432172E0810")) // noisy in main menu / loading screen
             return;
+        if (!strcmp(formattedLog, "[SCRIPT] 0xA9DB89899292A98F: realdiv(d9a3e735) divide by zero")) // laggy in game
+			return;
     }
     else if (!strcmp(format, "[NETGAME] No screen stats info for game mode %s")) // noisy in social lobby
         return;
