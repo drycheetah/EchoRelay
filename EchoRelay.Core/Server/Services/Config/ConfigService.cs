@@ -59,11 +59,13 @@ namespace EchoRelay.Core.Server.Services.Config
             if (typeSymbol == null)
             {
                 await sender.Send(new ConfigFailurev2(request.Info.Type, request.Info.Identifier, 1, $"Could not resolve symbol for type (type = {request.Info.Type}, id = {request.Info.Identifier})"));
+                await sender.Send(new TcpConnectionUnrequireEvent());
                 return;
             }
             if (identifierSymbol == null)
             {
                 await sender.Send(new ConfigFailurev2(request.Info.Type, request.Info.Identifier, 1, $"Could not resolve symbol for type (type = {request.Info.Type}, id = {request.Info.Identifier})"));
+                await sender.Send(new TcpConnectionUnrequireEvent());
                 return;
             }
 
@@ -72,6 +74,7 @@ namespace EchoRelay.Core.Server.Services.Config
             if (configData == null)
             {
                 await sender.Send(new ConfigFailurev2(request.Info.Type, request.Info.Identifier, 1, $"Could not find specified config data with the provided identifier (type = {request.Info.Type}, id = {request.Info.Identifier})"));
+                await sender.Send(new TcpConnectionUnrequireEvent());
                 return;
             }
 
